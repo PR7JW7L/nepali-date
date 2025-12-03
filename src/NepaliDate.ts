@@ -1,6 +1,13 @@
 import { adToBs, bsToAd } from "./converter";
 import { validateDate } from "./utils";
-import { formatDateBS } from "./formatter";
+import {
+  CALENDARS,
+  FORMAT_TOKENS,
+  formatDateAD,
+  formatDateBS,
+  type FormatString,
+  LOCALES,
+} from "./formatter";
 
 /**
  * NepaliDate represents a BS (Bikram Sambat) date.
@@ -75,10 +82,23 @@ export class NepaliDate {
   }
 
   // ---------------- Formatting ----------------
+  format(options?: {
+    format?: FormatString;
+    calendar?: (typeof CALENDARS)[number];
+    locale?: (typeof LOCALES)[number];
+  }): string {
+    const {
+      format = "YYYY-MM-DD",
+      calendar = "BS",
+      locale = "en",
+    } = options ?? {};
+    if (calendar === "BS") return formatDateBS(this, format, locale);
+    return formatDateAD(this.toAD(), format, locale);
+  }
 
-  /** Format as string in BS, default locale "en" */
-  format(locale: "ne" | "en" = "en"): string {
-    return formatDateBS(this, locale);
+  /** Optional helper to show all tokens */
+  static getFormatTokens(): Record<string, string> {
+    return FORMAT_TOKENS;
   }
 
   // ---------------- Utilities ----------------
