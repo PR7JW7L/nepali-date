@@ -141,6 +141,13 @@ const WEEKDAY_NAMES_NE = [
 ];
 const WEEKDAY_SHORT_NE = ["आइत", "सोम", "मंगल", "बुध", "बिहि", "शुक्र", "शनि"];
 
+function padNumber(num: number, locale: "en" | "ne" = "en"): string {
+  const str = num.toString().padStart(2, "0");
+  return locale === "ne"
+    ? str.replace(/\d/g, (d) => nepaliDigits[Number(d)])
+    : str;
+}
+
 function formatNumber(num: number, locale: "en" | "ne" = "en"): string {
   if (locale === "en") return String(num);
   return String(num).replace(/\d/g, (d) => nepaliDigits[Number(d)]);
@@ -164,20 +171,18 @@ function replaceTokens(
 /** Format BS date */
 export function formatDateBS(
   date: NepaliDate,
-  format = "YYYY-MM-DD",
+  format: FormatString = "YYYY-MM-DD",
   locale: "en" | "ne" = "en",
 ): string {
   const y = formatNumber(date.year, locale);
-  const m = formatNumber(date.monthIndex + 1, locale);
-  const d = formatNumber(date.day, locale);
 
   const replacements: Record<string, string> = {
     YYYY: y,
     YY: y.slice(-2),
-    MM: String(date.monthIndex + 1).padStart(2, "0"),
-    M: String(date.monthIndex + 1),
-    DD: String(date.day).padStart(2, "0"),
-    D: String(date.day),
+    MM: padNumber(date.monthIndex + 1, locale),
+    M: formatNumber(date.monthIndex + 1, locale),
+    DD: padNumber(date.day, locale),
+    D: formatNumber(date.day, locale),
     MMMM:
       locale === "ne"
         ? MONTH_NAMES_NE[date.monthIndex]
