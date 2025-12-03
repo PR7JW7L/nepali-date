@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NepaliDate } from "../src";
+import { ALLOWED_FORMATS, NepaliDate } from "../src";
 
 describe("NepaliDate", () => {
   it("should create a valid NepaliDate", () => {
@@ -92,7 +92,7 @@ describe("NepaliDate Formatting", () => {
       "२०७९-०१-०५",
     );
     expect(bsDate.format({ format: "D MMMM, YYYY", locale: "ne" })).toBe(
-      "५ बैशाख २०७९",
+      "५ बैशाख, २०७९",
     );
   });
 
@@ -107,16 +107,7 @@ describe("NepaliDate Formatting", () => {
   });
 
   it("should handle all allowed formats without throwing", () => {
-    const formats = [
-      "YYYY-MM-DD",
-      "YYYY/M/D",
-      "DD-MM-YYYY",
-      "D-M-YYYY",
-      "MMMM D, YYYY",
-      "MMM D, YYYY",
-    ] as const;
-
-    formats.forEach((fmt) => {
+    ALLOWED_FORMATS.forEach((fmt) => {
       expect(() => bsDate.format({ format: fmt })).not.toThrow();
     });
   });
