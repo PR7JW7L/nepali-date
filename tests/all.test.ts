@@ -112,3 +112,33 @@ describe("NepaliDate Formatting", () => {
     });
   });
 });
+
+describe("NepaliDate", () => {
+  describe("parse()", () => {
+    it("should parse Date object as AD", () => {
+      const ad = new Date(2022, 3, 18);
+      const date = NepaliDate.parse(ad);
+      const adConverted = date.toAD();
+      expect(adConverted.getFullYear()).toBe(ad.getFullYear());
+      expect(adConverted.getMonth()).toBe(ad.getMonth());
+      expect(adConverted.getDate()).toBe(ad.getDate());
+    });
+
+    it("should parse number timestamp as AD", () => {
+      const ad = new Date(2022, 3, 18);
+      const date = NepaliDate.parse(ad.getTime());
+      const adConverted = date.toAD();
+      expect(adConverted.getFullYear()).toBe(ad.getFullYear());
+      expect(adConverted.getMonth()).toBe(ad.getMonth());
+      expect(adConverted.getDate()).toBe(ad.getDate());
+    });
+
+    it("should parse tuple [year, monthIndex, day] as AD when specified", () => {
+      const date = NepaliDate.parse([2022, 3, 18], "AD");
+      const adConverted = date.toAD();
+      expect(adConverted.getFullYear()).toBe(2022);
+      expect(adConverted.getMonth()).toBe(3);
+      expect(adConverted.getDate()).toBe(18);
+    });
+  });
+});
