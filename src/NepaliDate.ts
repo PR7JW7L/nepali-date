@@ -22,94 +22,94 @@ export class NepaliDate {
     validateDate(year, monthIndex, day);
   }
 
-  // ------------------------------------------------------
-  //                   MAIN STATIC PARSER
-  // ------------------------------------------------------
-
-  static parse(
-    input: string | Date | number,
-    calendar: "AD" | "BS" = "AD",
-  ): NepaliDate {
-    // JS Date or timestamp → AD
-    if (input instanceof Date || typeof input === "number") {
-      return NepaliDate.fromAD(new Date(input));
-    }
-
-    // Parse string → normalized object
-    if (typeof input === "string") {
-      const { year, month, day } = NepaliDate.parseString(input);
-
-      return calendar === "AD"
-        ? NepaliDate.fromAD(new Date(year, month, day))
-        : NepaliDate.fromBS(year, month, day);
-    }
-
-    throw new Error("Unsupported input");
-  }
-
-  /** Parse string using strict priority:
-   *  If starts with YYYY → YYYY-MM-DD
-   *  Else → DD-MM-YYYY
-   */
-  private static parseString(str: string): {
-    year: number;
-    month: number;
-    day: number;
-  } {
-    const parts = str.split(/[-/]/).map((p) => parseInt(p, 10));
-    if (parts.length !== 3) throw new Error("Invalid date string");
-
-    // Rule 1: Starts with YYYY (4 digits)
-    if (/^\d{4}[-/]/.test(str)) {
-      const [y, m, d] = parts;
-      return { year: y, month: m - 1, day: d };
-    }
-
-    // Rule 2: DD-MM-YYYY
-    const [d, m, y] = parts;
-    return { year: y, month: m - 1, day: d };
-  }
-
-  /** Create from BS values */
+  // ---------------- Static Constructors ----------------
   static fromBS(year: number, monthIndex: number, day: number): NepaliDate {
     return new NepaliDate(year, monthIndex, day);
   }
 
-  /** Create from Gregorian Date */
   static fromAD(date: Date): NepaliDate {
     const { year, monthIndex, day } = adToBs(date);
     return new NepaliDate(year, monthIndex, day);
   }
 
-  // ---------------- Conversion ----------------
+  // ---------------- Parse ----------------
+  static parse(
+    value: string | number | Date | [number, number, number],
+    calendar: "BS" | "AD" = "BS",
+  ): NepaliDate {
+    if (value instanceof NepaliDate) return value.clone();
 
-  /** Convert to JS Date */
+    if (value instanceof Date) {
+      return NepaliDate.fromAD(value);
+    }
+
+    if (typeof value === "number") {
+      return NepaliDate.fromAD(new Date(value));
+    }
+
+    if (Array.isArray(value)) {
+      const [y, m, d] = value;
+      if (calendar === "BS") return NepaliDate.fromBS(y, m, d);
+      const ad = new Date(y, m, d);
+      return NepaliDate.fromAD(ad);
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim().replace(/\//g, "-");
+      let year: number, month: number, day: number;
+
+      // YYYY-MM-DD or YYYY-DD-MM variations
+      const parts = normalized.split("-").map((v) => parseInt(v, 10));
+      if (parts.length !== 3 || parts.some(isNaN)) {
+        throw new Error(`Invalid date string: ${value}`);
+      }
+
+      if (calendar === "BS") {
+        // detect order: year-first
+        if (parts[0] > 31) {
+          [year, month, day] = [parts[0], parts[1] - 1, parts[2]];
+        } else {
+          // day-first
+          [day, month, year] = [parts[0], parts[1] - 1, parts[2]];
+        }
+        return NepaliDate.fromBS(year, month, day);
+      } else {
+        // AD parsing
+        if (parts[0] > 31) {
+          [year, month, day] = [parts[0], parts[1] - 1, parts[2]];
+        } else {
+          [day, month, year] = [parts[0], parts[1] - 1, parts[2]];
+        }
+        return NepaliDate.fromAD(new Date(year, month, day));
+      }
+    }
+
+    throw new Error(`Unsupported value for NepaliDate.parse: ${value}`);
+  }
+
+  // ---------------- Conversion ----------------
   toAD(): Date {
     return bsToAd(this.year, this.monthIndex, this.day);
   }
 
   // ---------------- Arithmetic ----------------
-
-  /** Add n days, returns a new NepaliDate */
   addDays(n: number): NepaliDate {
     const ad = this.toAD();
-    ad.setUTCDate(ad.getUTCDate() + n);
+    ad.setDate(ad.getDate() + n);
     return NepaliDate.fromAD(ad);
   }
 
-  /** Subtract n days, returns a new NepaliDate */
   subtractDays(n: number): NepaliDate {
     return this.addDays(-n);
   }
 
-  /** Difference in days (this - other) */
   diffDays(other: NepaliDate): number {
-    const ms = this.toAD().getTime() - other.toAD().getTime();
-    return Math.floor(ms / (1000 * 60 * 60 * 24));
+    return Math.floor(
+      (this.toAD().getTime() - other.toAD().getTime()) / (1000 * 60 * 60 * 24),
+    );
   }
 
   // ---------------- Comparison ----------------
-
   before(other: NepaliDate): boolean {
     return this.toAD() < other.toAD();
   }

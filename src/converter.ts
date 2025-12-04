@@ -26,9 +26,8 @@ export function adToBs(ad: Date): {
   monthIndex: number;
   day: number;
 } {
-  let diff = Math.floor(
-    (ad.getTime() - REF_AD.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const msPerDay = 1000 * 60 * 60 * 24;
+  let diff = Math.round((ad.getTime() - REF_AD.getTime()) / msPerDay);
   let year = REF_BS.year;
   let monthIndex = REF_BS.monthIndex;
   let day = REF_BS.day;
