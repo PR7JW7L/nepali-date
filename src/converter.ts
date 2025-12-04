@@ -1,4 +1,4 @@
-import { BS_MONTH_DAYS } from "./data";
+import { BS_MONTH_DAYS, MAX_YEAR_BS, MIN_YEAR_BS } from "./data";
 import { validateDate } from "./utils";
 
 export const REF_BS = { year: 1970, monthIndex: 0, day: 1 };
@@ -6,21 +6,17 @@ export const REF_AD = new Date(Date.UTC(1913, 3, 13)); // 13 Apr 1913
 
 // Precompute cumulative days for each year from reference
 const yearCumulativeDays: Map<number, number> = new Map();
-let cumulativeDays = 0;
+let cumulativeDaysTotal = 0;
 
-// Get the year range from BS_MONTH_DAYS
-const minYear = Math.min(...Object.keys(BS_MONTH_DAYS).map(Number));
-const maxYear = Math.max(...Object.keys(BS_MONTH_DAYS).map(Number));
-
-for (let year = minYear; year <= maxYear; year++) {
-  yearCumulativeDays.set(year, cumulativeDays);
-  cumulativeDays += BS_MONTH_DAYS[year].reduce((a, b) => a + b, 0);
+for (let year = MIN_YEAR_BS; year <= MAX_YEAR_BS; year++) {
+  yearCumulativeDays.set(year, cumulativeDaysTotal);
+  cumulativeDaysTotal += BS_MONTH_DAYS[year].reduce((a, b) => a + b, 0);
 }
 
 // Precompute cumulative days for each month within each year
 const monthCumulativeDays: Map<number, number[]> = new Map();
 
-for (let year = minYear; year <= maxYear; year++) {
+for (let year = MIN_YEAR_BS; year <= MAX_YEAR_BS; year++) {
   const monthDays: number[] = [0]; // Month 0 starts at day 0
   let sum = 0;
   for (let m = 0; m < 12; m++) {
@@ -36,12 +32,7 @@ for (let year = minYear; year <= maxYear; year++) {
 export function bsToAd(year: number, monthIndex: number, day: number): Date {
   validateDate(year, monthIndex, day);
 
-  // Calculate days from reference using precomputed values
-  const daysFromRefYear =
-    (yearCumulativeDays.get(year) || 0) -
-    (yearCumulativeDays.get(REF_BS.year) || 0);
-  const daysFromMonths = (monthCumulativeDays.get(year) || [])[monthIndex] || 0;
-  const totalDays = daysFromRefYear + daysFromMonths + (day - REF_BS.day);
+  const totalDays = bsDateToDays(year, monthIndex, day);
 
   const ad = new Date(REF_AD);
   ad.setUTCDate(ad.getUTCDate() + totalDays);
@@ -57,12 +48,12 @@ export function adToBs(ad: Date): {
   day: number;
 } {
   const msPerDay = 1000 * 60 * 60 * 24;
-  const daysSinceRef = Math.round((ad.getTime() - REF_AD.getTime()) / msPerDay);
+  const daysSinceRef = Math.floor((ad.getTime() - REF_AD.getTime()) / msPerDay);
 
   // Binary search for the year
   let year = REF_BS.year;
-  let low = minYear;
-  let high = maxYear;
+  let low = MIN_YEAR_BS;
+  let high = MAX_YEAR_BS;
 
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
@@ -119,4 +110,27 @@ export function getDaysInYear(year: number): number {
  */
 export function getDaysInMonth(year: number, monthIndex: number): number {
   return BS_MONTH_DAYS[year]?.[monthIndex] || 0;
+}
+
+/**
+ * Calculate total days from reference BS date to the given BS date
+ * Reference date (1970/0/1) is considered as day 0
+ */
+function bsDateToDays(year: number, monthIndex: number, day: number): number {
+  let totalDays = 0;
+
+  // Add days for complete years from reference to the target year
+  for (let y = REF_BS.year; y < year; y++) {
+    totalDays += BS_MONTH_DAYS[y].reduce((a, b) => a + b, 0);
+  }
+
+  // Add days for complete months in the target year
+  for (let m = 0; m < monthIndex; m++) {
+    totalDays += BS_MONTH_DAYS[year][m];
+  }
+
+  // Add the remaining days (day 1 = 0 days from start of month)
+  totalDays += day - 1;
+
+  return totalDays;
 }

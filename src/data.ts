@@ -114,3 +114,6 @@ export const BS_MONTH_DAYS = {
   2082: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
   2083: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
 } as Readonly<Record<number, ReadonlyArray<number>>>;
+
+export const MIN_YEAR_BS = Math.min(...Object.keys(BS_MONTH_DAYS).map(Number));
+export const MAX_YEAR_BS = Math.max(...Object.keys(BS_MONTH_DAYS).map(Number));
