@@ -34,7 +34,7 @@ export class NepaliDate {
 
   // ---------------- Parse ----------------
   static parse(
-    value: string | number | Date | [number, number, number],
+    value: NepaliDate | string | number | Date | [number, number, number],
     calendar: "BS" | "AD" = "BS",
   ): NepaliDate {
     if (value instanceof NepaliDate) return value.clone();
@@ -64,24 +64,17 @@ export class NepaliDate {
         throw new Error(`Invalid date string: ${value}`);
       }
 
-      if (calendar === "BS") {
-        // detect order: year-first
-        if (parts[0] > 31) {
-          [year, month, day] = [parts[0], parts[1] - 1, parts[2]];
-        } else {
-          // day-first
-          [day, month, year] = [parts[0], parts[1] - 1, parts[2]];
-        }
-        return NepaliDate.fromBS(year, month, day);
+      const isYearFirst = parts[0] > 31;
+
+      if (isYearFirst) {
+        [year, month, day] = [parts[0], parts[1] - 1, parts[2]];
       } else {
-        // AD parsing
-        if (parts[0] > 31) {
-          [year, month, day] = [parts[0], parts[1] - 1, parts[2]];
-        } else {
-          [day, month, year] = [parts[0], parts[1] - 1, parts[2]];
-        }
-        return NepaliDate.fromAD(new Date(year, month, day));
+        [day, month, year] = [parts[0], parts[1] - 1, parts[2]];
       }
+
+      return calendar === "BS"
+        ? NepaliDate.fromBS(year, month, day)
+        : NepaliDate.fromAD(new Date(year, month, day));
     }
 
     throw new Error(`Unsupported value for NepaliDate.parse: ${value}`);
