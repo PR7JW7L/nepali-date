@@ -6,38 +6,55 @@ import {
   formatDateAD,
   formatDateBS,
   type FormatString,
-  LOCALES,
 } from "./formatter";
 
+type DateArg =
+  | NepaliDate
+  | string
+  | number
+  | Date
+  | [number, number, number]
+  | undefined
+  | null;
+
 export class NepaliDate {
-  constructor(
-    public year: number,
-    public monthIndex: number,
-    public day: number,
-  ) {
-    validateDate(year, monthIndex, day);
+  public year: number;
+  public monthIndex: number;
+  public day: number;
+
+  constructor(year?: number, monthIndex?: number, day?: number) {
+    if (year == null || monthIndex == null || day == null) {
+      const today = new Date();
+      const bs = adToBs(today);
+      this.year = bs.year;
+      this.monthIndex = bs.monthIndex;
+      this.day = bs.day;
+    } else {
+      validateDate(year, monthIndex, day);
+      this.year = year;
+      this.monthIndex = monthIndex;
+      this.day = day;
+    }
   }
 
-  // -----------------------------------------------------
-  //                 STATIC HELPERS
-  // -----------------------------------------------------
+  // ---------------- STATIC HELPERS ----------------
 
-  /** Low-level BS constructor (always expects normalized y/m/d) */
-  static fromBS(
-    value: NepaliDate | string | number | Date | [number, number, number],
-  ): NepaliDate {
-    // Normalize into a NepaliDate (BS)
+  static fromBS(value?: DateArg): NepaliDate {
+    if (!value) {
+      const today = new Date();
+      const bs = adToBs(today);
+      return new NepaliDate(bs.year, bs.monthIndex, bs.day);
+    }
     const nd = NepaliDate.parse(value, "BS");
     return new NepaliDate(nd.year, nd.monthIndex, nd.day);
   }
 
-  /** Flexible AD → BS converter */
-  static fromAD(
-    value: NepaliDate | string | number | Date | [number, number, number],
-  ): NepaliDate {
+  static fromAD(value?: DateArg): NepaliDate {
     let ad: Date;
 
-    if (value instanceof Date) {
+    if (!value) {
+      ad = new Date();
+    } else if (value instanceof Date) {
       ad = value;
     } else if (value instanceof NepaliDate) {
       ad = value.toAD();
@@ -46,54 +63,38 @@ export class NepaliDate {
     } else if (Array.isArray(value)) {
       ad = new Date(value[0], value[1], value[2]);
     } else {
-      // string → parse as AD
       const parsed = NepaliDate.parse(value, "AD");
       ad = parsed.toAD();
     }
 
-    // Convert AD → BS
     const { year, monthIndex, day } = adToBs(ad);
     return new NepaliDate(year, monthIndex, day);
   }
 
-  // -----------------------------------------------------
-  //                        PARSE
-  // -----------------------------------------------------
+  // ---------------- PARSE ----------------
 
-  static parse(
-    value?: NepaliDate | string | number | Date | [number, number, number],
-    calendar: "BS" | "AD" = "BS",
-  ): NepaliDate {
-    // Already a NepaliDate
+  static parse(value?: DateArg, calendar: "BS" | "AD" = "BS"): NepaliDate {
+    if (!value) return NepaliDate.fromBS();
+
     if (value instanceof NepaliDate) return value.clone();
-
-    // JS Date → parse as AD
     if (value instanceof Date) {
       const { year, monthIndex, day } = adToBs(value);
       return new NepaliDate(year, monthIndex, day);
     }
-
-    // timestamp → Date → AD
     if (typeof value === "number") {
       const d = new Date(value);
       const { year, monthIndex, day } = adToBs(d);
       return new NepaliDate(year, monthIndex, day);
     }
-
-    // Tuple input
     if (Array.isArray(value)) {
       const [y, m, d] = value;
       if (calendar === "BS") return new NepaliDate(y, m, d);
-
       const { year, monthIndex, day } = adToBs(new Date(y, m, d));
       return new NepaliDate(year, monthIndex, day);
     }
-
-    // String parsing
     if (typeof value === "string") {
       const normalized = value.trim().replace(/\//g, "-");
       const parts = normalized.split("-").map((v) => parseInt(v, 10));
-
       if (parts.length !== 3 || parts.some(isNaN)) {
         throw new Error(`Invalid date string: ${value}`);
       }
@@ -107,33 +108,25 @@ export class NepaliDate {
         [day, month, year] = [parts[0], parts[1] - 1, parts[2]];
       }
 
-      if (calendar === "BS") {
-        return new NepaliDate(year, month, day);
-      }
-
-      // AD → BS
+      if (calendar === "BS") return new NepaliDate(year, month, day);
       const {
         year: y2,
         monthIndex: m2,
         day: d2,
-      } = adToBs(new Date(year, month, day));
+      } = adToBs(new Date(Date.UTC(year, month, day)));
       return new NepaliDate(y2, m2, d2);
     }
 
     throw new Error(`Unsupported value for NepaliDate.parse: ${value}`);
   }
 
-  // -----------------------------------------------------
-  //                   CONVERSION
-  // -----------------------------------------------------
+  // ---------------- CONVERSION ----------------
 
   toAD(): Date {
-    return bsToAd(this.year, this.monthIndex, this.day);
+    return bsToAd(this.year!, this.monthIndex!, this.day!);
   }
 
-  // -----------------------------------------------------
-  //                   ARITHMETIC
-  // -----------------------------------------------------
+  // ---------------- ARITHMETIC ----------------
 
   addDays(n: number): NepaliDate {
     const ad = this.toAD();
@@ -151,9 +144,7 @@ export class NepaliDate {
     );
   }
 
-  // -----------------------------------------------------
-  //                 COMPARISON
-  // -----------------------------------------------------
+  // ---------------- COMPARISON ----------------
 
   before(other: NepaliDate): boolean {
     return this.toAD() < other.toAD();
@@ -171,35 +162,23 @@ export class NepaliDate {
     );
   }
 
-  // -----------------------------------------------------
-  //                    FORMATTING
-  // -----------------------------------------------------
+  // ---------------- FORMATTING ----------------
 
   format(options?: {
     format?: FormatString;
     calendar?: (typeof CALENDARS)[number];
-    locale?: (typeof LOCALES)[number];
   }): string {
-    const {
-      format = "YYYY-MM-DD",
-      calendar = "BS",
-      locale = "en",
-    } = options ?? {};
+    const { format = "YYYY-MM-DD", calendar = "BS" } = options ?? {};
 
-    if (calendar === "BS") {
-      return formatDateBS(this, format, locale);
-    }
-
-    return formatDateAD(this.toAD(), format, locale);
+    if (calendar === "BS") return formatDateBS(this, format);
+    return formatDateAD(this.toAD(), format);
   }
 
   static getFormatTokens(): Record<string, string> {
     return FORMAT_TOKENS;
   }
 
-  // -----------------------------------------------------
-  //                    UTILITIES
-  // -----------------------------------------------------
+  // ---------------- UTILITIES ----------------
 
   clone(): NepaliDate {
     return new NepaliDate(this.year, this.monthIndex, this.day);

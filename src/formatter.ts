@@ -1,70 +1,48 @@
 import type { NepaliDate } from "./NepaliDate";
 
 export const ALLOWED_FORMATS = [
-  // Numeric YYYY first
   "YYYY-MM-DD",
   "YYYY/MM/DD",
   "YYYY.MM.DD",
   "YYYY-M-D",
   "YYYY/M/D",
   "YYYY.M.D",
-
-  // Numeric DD first
   "DD-MM-YYYY",
   "DD/MM/YYYY",
   "DD.MM.YYYY",
   "D-M-YYYY",
   "D/M/YYYY",
   "D.M.YYYY",
-
-  // Month names full
   "MMMM D, YYYY",
   "MMMM DD, YYYY",
   "D MMMM, YYYY",
   "DD MMMM, YYYY",
-
-  // Month names short
   "MMM D, YYYY",
   "MMM DD, YYYY",
   "D MMM, YYYY",
   "DD MMM, YYYY",
-
-  // Year short
-  "YY-MM-DD",
-  "DD-MM-YY",
 ] as const;
 
 export type FormatString = (typeof ALLOWED_FORMATS)[number];
 
-/** Token reference for BS and AD formatting */
 export const FORMAT_TOKENS = {
-  // Year
   YYYY: "Full year (e.g., 2079 or 2022)",
-  YY: "2-digit year (e.g., 79 or 22)",
-
-  // Month
   MM: "Month as 2-digit number, 01-12",
   M: "Month as number, 1-12",
-  MMMM: "Full month name (e.g., Baishakh / बैशाख)",
-  MMM: "Short month name (e.g., Bai / बै)",
-
-  // Day
+  MMMM: "Full month name",
+  MMM: "Short month name",
   DD: "Day of month as 2-digit, 01-31",
   D: "Day of month as number, 1-31",
-
-  // Weekday (AD only)
-  dddd: "Full weekday name (e.g., Monday / सोमवार)",
-  ddd: "Short weekday name (e.g., Mon / सोम)",
+  dddd: "Full weekday name (AD only)",
+  ddd: "Short weekday name (AD only)",
 };
 
-/** List of all supported calendars */
 export const CALENDARS = ["BS", "AD"] as const;
 
-/** List of supported locales */
-export const LOCALES = ["en", "ne"] as const;
+// Nepali digits
+export const nepaliDigits = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
 
-const nepaliDigits = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
-const MONTH_NAMES_EN = [
+export const MONTH_NAMES_EN_BS = [
   "Baishakh",
   "Jestha",
   "Ashadh",
@@ -78,21 +56,8 @@ const MONTH_NAMES_EN = [
   "Falgun",
   "Chaitra",
 ];
-const MONTH_SHORT_EN = [
-  "Bai",
-  "Jes",
-  "Ash",
-  "Shr",
-  "Bha",
-  "Ashw",
-  "Kar",
-  "Man",
-  "Pou",
-  "Mag",
-  "Fal",
-  "Chai",
-];
-const MONTH_NAMES_NE = [
+
+export const MONTH_NAMES_NE_BS = [
   "बैशाख",
   "जेष्ठ",
   "आषाढ",
@@ -106,7 +71,8 @@ const MONTH_NAMES_NE = [
   "फाल्गुन",
   "चैत्र",
 ];
-const MONTH_SHORT_NE = [
+
+export const MONTH_SHORT_NE_BS = [
   "बै",
   "जे",
   "आ",
@@ -120,7 +86,39 @@ const MONTH_SHORT_NE = [
   "फा",
   "चै",
 ];
-const WEEKDAY_NAMES_EN = [
+
+// ---------------- AD months ----------------
+export const MONTH_NAMES_EN_AD = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+export const MONTH_SHORT_EN_AD = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+// ---------------- Weekdays ----------------
+export const WEEKDAY_NAMES_EN = [
   "Sunday",
   "Monday",
   "Tuesday",
@@ -129,8 +127,16 @@ const WEEKDAY_NAMES_EN = [
   "Friday",
   "Saturday",
 ];
-const WEEKDAY_SHORT_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAY_NAMES_NE = [
+export const WEEKDAY_SHORT_EN = [
+  "Sun",
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri",
+  "Sat",
+];
+export const WEEKDAY_NAMES_NE = [
   "आइतवार",
   "सोमवार",
   "मंगलवार",
@@ -139,87 +145,106 @@ const WEEKDAY_NAMES_NE = [
   "शुक्रवार",
   "शनिवार",
 ];
-const WEEKDAY_SHORT_NE = ["आइत", "सोम", "मंगल", "बुध", "बिहि", "शुक्र", "शनि"];
 
-function padNumber(num: number, locale: "en" | "ne" = "en"): string {
+export const WEEKDAY_SHORT_NE = [
+  "आइत",
+  "सोम",
+  "मंगल",
+  "बुध",
+  "बिहि",
+  "शुक्र",
+  "शनि",
+];
+
+const BS_TO_AD_INDEX_MAPPING = [
+  [3, 4], // Baishakh: Apr/May
+  [4, 5], // Jestha: May/Jun
+  [5, 6], // Ashadh: Jun/Jul
+  [6, 7], // Shrawan: Jul/Aug
+  [7, 8], // Bhadra: Aug/Sep
+  [8, 9], // Ashwin: Sep/Oct
+  [9, 10], // Kartik: Oct/Nov
+  [10, 11], // Mangsir: Nov/Dec
+  [11, 0], // Poush: Dec/Jan
+  [0, 1], // Magh: Jan/Feb
+  [1, 2], // Falgun: Feb/Mar
+  [2, 3], // Chaitra: Mar/Apr
+];
+
+export const BS_MONTHS_WITH_AD = MONTH_NAMES_EN_BS.map((en, index) => {
+  const [adMonth1, adMonth2] = BS_TO_AD_INDEX_MAPPING[index];
+  const ad = `${MONTH_SHORT_EN_AD[adMonth1]}/${MONTH_SHORT_EN_AD[adMonth2]}`;
+
+  return {
+    en,
+    np: MONTH_NAMES_NE_BS[index],
+    ad,
+  };
+});
+
+// ---------------- Helpers ----------------
+export function padNumber(num: number, locale: "en" | "ne" = "en") {
   const str = num.toString().padStart(2, "0");
   return locale === "ne"
     ? str.replace(/\d/g, (d) => nepaliDigits[Number(d)])
     : str;
 }
 
-function formatNumber(num: number, locale: "en" | "ne" = "en"): string {
-  if (locale === "en") return String(num);
-  return String(num).replace(/\d/g, (d) => nepaliDigits[Number(d)]);
+export function formatNumber(num: number, locale: "en" | "ne" = "en") {
+  return locale === "ne"
+    ? String(num).replace(/\d/g, (d) => nepaliDigits[Number(d)])
+    : String(num);
 }
 
-function replaceTokens(
-  template: string,
-  replacements: Record<string, string>,
-): string {
-  let result = template;
-
+function replaceTokens(template: string, replacements: Record<string, string>) {
+  // Sort tokens by length descending to replace longest first
   const tokens = Object.keys(replacements).sort((a, b) => b.length - a.length);
 
-  for (const token of tokens) {
-    result = result.replace(new RegExp(token, "g"), replacements[token]);
-  }
+  // Create a regex that matches any of the tokens as whole units
+  const pattern = new RegExp(
+    tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
+    "g",
+  );
 
-  return result;
+  return template.replace(pattern, (match) => replacements[match]);
 }
 
-/** Format BS date */
+// ---------------- Format BS ----------------
 export function formatDateBS(
   date: NepaliDate,
   format: FormatString = "YYYY-MM-DD",
-  locale: "en" | "ne" = "en",
-): string {
-  const y = formatNumber(date.year, locale);
-
+) {
+  const y = formatNumber(date.year, "ne");
+  console.log(date.monthIndex, MONTH_NAMES_NE_BS[date.monthIndex]);
   const replacements: Record<string, string> = {
     YYYY: y,
-    YY: y.slice(-2),
-    MM: padNumber(date.monthIndex + 1, locale),
-    M: formatNumber(date.monthIndex + 1, locale),
-    DD: padNumber(date.day, locale),
-    D: formatNumber(date.day, locale),
-    MMMM:
-      locale === "ne"
-        ? MONTH_NAMES_NE[date.monthIndex]
-        : MONTH_NAMES_EN[date.monthIndex],
-    MMM:
-      locale === "ne"
-        ? MONTH_SHORT_NE[date.monthIndex]
-        : MONTH_SHORT_EN[date.monthIndex],
+    MM: padNumber(date.monthIndex + 1, "ne"),
+    M: formatNumber(date.monthIndex + 1, "ne"),
+    DD: padNumber(date.day, "ne"),
+    D: formatNumber(date.day, "ne"),
+    MMMM: MONTH_NAMES_NE_BS[date.monthIndex],
+    MMM: MONTH_SHORT_NE_BS[date.monthIndex],
   };
-
   return replaceTokens(format, replacements);
 }
 
-/** Format AD date */
-export function formatDateAD(
-  date: Date,
-  format = "YYYY-MM-DD",
-  locale: "en" | "ne" = "en",
-): string {
-  const year = formatNumber(date.getFullYear(), locale);
-  const month = date.getMonth();
-  const weekday = date.getDay();
+// ---------------- Format AD ----------------
+export function formatDateAD(date: Date, format: FormatString = "YYYY-MM-DD") {
+  const y = formatNumber(date.getFullYear(), "en");
+  const m = date.getMonth();
+  const d = date.getDate();
+  const wd = date.getDay();
 
   const replacements: Record<string, string> = {
-    YYYY: year,
-    YY: year.slice(-2),
-    MM: String(month + 1).padStart(2, "0"),
-    M: String(month + 1),
-    DD: String(date.getDate()).padStart(2, "0"),
-    D: String(date.getDate()),
-    dddd:
-      locale === "ne" ? WEEKDAY_NAMES_NE[weekday] : WEEKDAY_NAMES_EN[weekday],
-    ddd:
-      locale === "ne" ? WEEKDAY_SHORT_NE[weekday] : WEEKDAY_SHORT_EN[weekday],
-    MMMM: locale === "ne" ? MONTH_NAMES_NE[month] : MONTH_NAMES_EN[month],
-    MMM: locale === "ne" ? MONTH_SHORT_NE[month] : MONTH_SHORT_EN[month],
+    YYYY: y,
+    MM: padNumber(m + 1, "en"),
+    M: formatNumber(m + 1, "en"),
+    DD: padNumber(d, "en"),
+    D: formatNumber(d, "en"),
+    dddd: WEEKDAY_NAMES_EN[wd],
+    ddd: WEEKDAY_SHORT_EN[wd],
+    MMMM: MONTH_NAMES_EN_AD[m],
+    MMM: MONTH_SHORT_EN_AD[m],
   };
-
   return replaceTokens(format, replacements);
 }
