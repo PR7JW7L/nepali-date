@@ -6,6 +6,7 @@ import {
   formatDateAD,
   formatDateBS,
   type FormatString,
+  LOCALE,
 } from "./formatter";
 
 type DateArg =
@@ -167,11 +168,16 @@ export class NepaliDate {
   format(options?: {
     format?: FormatString;
     calendar?: (typeof CALENDARS)[number];
+    locale?: (typeof LOCALE)[number];
   }): string {
-    const { format = "YYYY-MM-DD", calendar = "BS" } = options ?? {};
+    const {
+      format = "YYYY-MM-DD",
+      calendar = "BS",
+      locale = "en",
+    } = options ?? {};
 
-    if (calendar === "BS") return formatDateBS(this, format);
-    return formatDateAD(this.toAD(), format);
+    if (calendar === "BS") return formatDateBS(this, format, locale);
+    return formatDateAD(this.toAD(), format, locale);
   }
 
   static getFormatTokens(): Record<string, string> {
