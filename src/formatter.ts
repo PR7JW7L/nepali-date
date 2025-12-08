@@ -38,6 +38,7 @@ export const FORMAT_TOKENS = {
 };
 
 export const CALENDARS = ["BS", "AD"] as const;
+export const LOCALE = ["en", "ne"] as const;
 
 // Nepali digits
 export const nepaliDigits = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
@@ -186,7 +187,7 @@ export const BS_MONTHS_WITH_AD = MONTH_NAMES_EN_BS.map((en, index) => {
 export function padNumber(num: number, locale: "en" | "ne" = "en") {
   const str = num.toString().padStart(2, "0");
   return locale === "ne"
-    ? str.replace(/\d/g, (d) => nepaliDigits[Number(d)])
+    ? str.replace(/\d/g, (d: string) => nepaliDigits[Number(d)])
     : str;
 }
 
@@ -213,15 +214,15 @@ function replaceTokens(template: string, replacements: Record<string, string>) {
 export function formatDateBS(
   date: NepaliDate,
   format: FormatString = "YYYY-MM-DD",
+  locale: (typeof LOCALE)[number] = "en",
 ) {
-  const y = formatNumber(date.year, "ne");
-  console.log(date.monthIndex, MONTH_NAMES_NE_BS[date.monthIndex]);
+  const y = formatNumber(date.year, locale);
   const replacements: Record<string, string> = {
     YYYY: y,
-    MM: padNumber(date.monthIndex + 1, "ne"),
-    M: formatNumber(date.monthIndex + 1, "ne"),
-    DD: padNumber(date.day, "ne"),
-    D: formatNumber(date.day, "ne"),
+    MM: padNumber(date.monthIndex + 1, locale),
+    M: formatNumber(date.monthIndex + 1, locale),
+    DD: padNumber(date.day, locale),
+    D: formatNumber(date.day, locale),
     MMMM: MONTH_NAMES_NE_BS[date.monthIndex],
     MMM: MONTH_SHORT_NE_BS[date.monthIndex],
   };
@@ -229,18 +230,22 @@ export function formatDateBS(
 }
 
 // ---------------- Format AD ----------------
-export function formatDateAD(date: Date, format: FormatString = "YYYY-MM-DD") {
-  const y = formatNumber(date.getFullYear(), "en");
+export function formatDateAD(
+  date: Date,
+  format: FormatString = "YYYY-MM-DD",
+  locale: (typeof LOCALE)[number] = "en",
+) {
+  const y = formatNumber(date.getFullYear(), locale);
   const m = date.getMonth();
   const d = date.getDate();
   const wd = date.getDay();
 
   const replacements: Record<string, string> = {
     YYYY: y,
-    MM: padNumber(m + 1, "en"),
-    M: formatNumber(m + 1, "en"),
-    DD: padNumber(d, "en"),
-    D: formatNumber(d, "en"),
+    MM: padNumber(m + 1, locale),
+    M: formatNumber(m + 1, locale),
+    DD: padNumber(d, locale),
+    D: formatNumber(d, locale),
     dddd: WEEKDAY_NAMES_EN[wd],
     ddd: WEEKDAY_SHORT_EN[wd],
     MMMM: MONTH_NAMES_EN_AD[m],
