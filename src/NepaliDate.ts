@@ -229,16 +229,21 @@ export class NepaliDate {
 
     const pad = (n: number) => n.toString().padStart(2, "0");
 
+    const shouldIncludeTime =
+      withTime && Boolean(this.hour || this.minute || this.second);
+
+    let formatted: string;
+
     if (calendar === "BS") {
-      const formatted = formatDateBS(this, format, locale);
-      if (withTime)
-        return `${formatted} ${pad(this.hour)}:${pad(this.minute)}:${pad(this.second)}`;
-      return formatted;
+      formatted = formatDateBS(this, format, locale);
+    } else {
+      formatted = formatDateAD(this.toAD(), format, locale);
     }
 
-    const formatted = formatDateAD(this.toAD(), format, locale);
-    if (withTime)
-      return `${formatted} ${pad(this.hour)}:${pad(this.minute)}:${pad(this.second)}`;
+    if (shouldIncludeTime) {
+      formatted += ` ${pad(this.hour)}:${pad(this.minute)}:${pad(this.second)}`;
+    }
+
     return formatted;
   }
 
