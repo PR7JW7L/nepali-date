@@ -73,6 +73,19 @@ export class NepaliDate {
   static fromAD(value?: DateArg): NepaliDate {
     let ad: Date;
 
+    function toNepaliDate(date: Date, offset: "local" | "UTC") {
+      const isLocal = offset === "local";
+      const bs = adToBs(date);
+      return new NepaliDate(
+        bs.year,
+        bs.monthIndex,
+        bs.day,
+        isLocal ? date.getHours() : date.getUTCHours(),
+        isLocal ? date.getMinutes() : date.getUTCMinutes(),
+        isLocal ? date.getSeconds() : date.getUTCSeconds(),
+      );
+    }
+
     if (!value) {
       ad = new Date();
     } else if (value instanceof Date) {
@@ -83,7 +96,7 @@ export class NepaliDate {
       const parsed = NepaliDate.parse(value, "AD");
       ad = parsed.toAD();
     } else if (typeof value === "number") {
-      ad = new Date(value);
+      return toNepaliDate(new Date(value), "local");
     } else if (Array.isArray(value)) {
       ad = new Date(value[0], value[1], value[2]);
     } else {
@@ -91,17 +104,7 @@ export class NepaliDate {
       ad = parsed.toAD();
     }
 
-    // Convert AD calendar → BS calendar using only Y/M/D
-    const bs = adToBs(ad);
-
-    return new NepaliDate(
-      bs.year,
-      bs.monthIndex,
-      bs.day,
-      ad.getHours(),
-      ad.getMinutes(),
-      ad.getSeconds(),
-    );
+    return toNepaliDate(ad, "UTC");
   }
 
   // ---------------- PARSE ----------------
@@ -187,7 +190,7 @@ export class NepaliDate {
 
   toAD(): Date {
     const dateOnly = bsToAd(this.year, this.monthIndex, this.day);
-    dateOnly.setHours(this.hour, this.minute, this.second, 0);
+    dateOnly.setUTCHours(this.hour, this.minute, this.second, 0);
     return dateOnly;
   }
 
